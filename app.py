@@ -1,13 +1,13 @@
 import json
 import projectsecrets
+import pprint
 
 from flask import Flask, redirect, session, url_for, render_template, request, jsonify
 from authlib.integrations.flask_client import OAuth
 
-from functions import * # TODO: add this!
+from functions import get_length_tracks, get_travel_duration, search_playlists
 
 from projectsecrets import app_secret, spotify_client_id, spotify_client_secret
-# TODO: USE THIS STRUCTURE WHEN MAKING USER ENTER THEIR TOKEN!!
 app = Flask(__name__)
 app.secret_key = app_secret
 
@@ -31,20 +31,14 @@ def index():
     except KeyError:
         return redirect(url_for("login"))
 
-    # todo: do stuff here ??
-    # get user inputs for type of playlist, starting, and ending locations (potench also ask for type of plalist)
-    # call the function that uses maps api to get duration of travel
-    # call the function that gets a playlist
-    # call the function that gets the length of the playlist
-    # while playlist length is not within 15 seconds of the total_travel_time:
-    # if that length is total_time + or - 15 seconds:
-        # return the results page and display the playlist
-    # else:
-        # call the function that will remove one song from the playlist
-
+    # this was literally just working and now its not asking for me to sign in with my spotify account, maybe it was too many tries in the hour??
     print(dir(oauth.spotify))
-    data = oauth.spotify.get("me/top/tracks?limit=5", token=token).text
-    return json.loads(data)
+
+    access_token = oauth.spotify.get("access_token")["access_token"]
+    print("Access Token:", access_token)
+    pprint.pprint(get_length_tracks(access_token))
+
+    # return render_template("index.html", x=None)
 
 @app.route("/login")
 def login():
@@ -52,17 +46,11 @@ def login():
     print(redirect_uri)
     return oauth.spotify.authorize_redirect(redirect_uri)
 
-
-@app.route("/spotify-authorize")
+@app.route("/spotifyauthorize")
 def authorize():
     token = oauth.spotify.authorize_access_token()
     session["spotify-token"] = token
     return token
-
-@app.route('/')
-def index():
-    x = "something"
-    return render_template("index.html", x=x)
 
 # --------------------------------------------------- MY PAGES --------------------------------------------------
 @app.route('/about')
@@ -79,7 +67,7 @@ def about():
 @app.route('/getplaylist')
 def printplaylists():
     # get the playlist:
-    playlists = search_walking_playlists()
+    playlists = search_playlists()
     # get info from each track
     time = get_length_tracks(playlists)
 

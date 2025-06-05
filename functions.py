@@ -69,7 +69,7 @@ def get_travel_duration(key, travel_type, start_destination, end_destination):
 # --------------------------------------------------- SPOTiFY API FUNCTIONS --------------------------------------------
 
 # This function returns a list of dictionaries of playlists on Spotify from the query: walking.
-def search_walking_playlists(access_token, search="walking"):
+def search_playlists(access_token, search="walking"):
 
     query = urllib.parse.urlencode({
         "q": search,
@@ -90,7 +90,7 @@ def search_walking_playlists(access_token, search="walking"):
             res_data = res.read()
             data = json.loads(res_data)
 
-            print(json.dumps(data, indent=2))  # Debugging output
+            # print(json.dumps(data, indent=2))  # Debugging output
 
             playlists = []
             for item in data.get("playlists", {}).get("items", []):
@@ -117,39 +117,40 @@ def search_walking_playlists(access_token, search="walking"):
 
 # This function gets the length in ms of each song within the playlist
 # and then adds up the total length of the playlist and returns the value in seconds.
-def get_length_tracks(playlist, access_token):
-    # access_token = get_access_token()
-    # if not access_token:
-    #     return jsonify({"error": "Failed to get access token"}), 500
-    print("Went inside get_length_tracks")
-    # TODO: add some print statements to see if it even gets to here !!
+def get_length_tracks(access_token, search="walking"):
+    print("Access Token:", access_token)
+    playlist = search_playlists(access_token, search)
+    print(playlist)
+
+    if not playlist:
+        print("No playlists found.")
+        return 0
+
     # put the url together for the API call:
     playlist_id = playlist[0]["id"]
     playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
-    # i think we have to call the API to get the playlist list of tracks from the href
-        # and then we have to use the Get Track to get info on each track
+
     # get the list of tracks:
     headers = {
         "Authorization": f"Bearer {access_token}"
     }
 
     request1 = urllib.request.Request(playlist_url, headers=headers)
-    # data = request1.json() # todo: do we do this line or the one below with json.loads?? whats the diff??
 
     try:
         with urllib.request.urlopen(request1) as res:
-            print("inside try")
+
             res_data = res.read()
-            playlists = json.loads(res_data) # todo: not exactly sure what this line does so might not work
+            playlists = json.loads(res_data)
             # get the tracks from the track list in playlist:
             tracks = []
-            for item in playlists.get("playlists", {}).get("items", []): # todo: playlists might not be the correct object to call .get on
-                print("inside loop") # todo: ask chat why its not working and show your code !!
+            for item in playlists.get("playlists", {}).get("items", []):
+                # print("inside loop")
                 if item and "track" in item:
                     tracks.append({
                         "id": item["track"]["id"]
                     })
-                    print("Went inside for loop")
+                    # print("Went inside for loop")
                 else:
                     print(f"Error: {item}")
     except urllib.error.HTTPError as e:
@@ -161,24 +162,23 @@ def get_length_tracks(playlist, access_token):
         # put the url together for the API call:
         track_id = track["id"]
         track_url = f"https://api.spotify.com/v1/tracks/{track_id}"
-        headers = {
-            "Authorization": f"Bearer {access_token}" # todo: do i need a new access token every time we make an API call??
-        }
         # make request to get track info
         request2 = urllib.request.Request(track_url, headers=headers)
         # data = request2.json()
 
-
         try:
-            with urllib.request.urlopen(request1) as res:
+            with urllib.request.urlopen(request2) as res:
                 res_data = res.read()
-                track = json.loads(res_data)  # todo: not exactly sure what this line does so might not work
+                track_data = json.loads(res_data)
                 # add the length of the track to the total playlist duration
-                track_duration = track.get("duration_ms", {})
+                track_duration = track_data.get("duration_ms", 0)
                 total_time += track_duration
-                return total_time
+
         except urllib.error.HTTPError as e:
             print("Failed to get access token: {}".format(e))
+    return total_time
+
+
 
 def main():
     # get_lat_lon(projectsecrets.openroute_service_key, "University of Washington, Seattle", "340 NW 47th St, Seattle, WA, 98107")
