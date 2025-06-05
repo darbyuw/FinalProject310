@@ -2,20 +2,77 @@
 from flask import jsonify
 import urllib.request
 import urllib.parse
-import base64
 import json
 import projectsecrets
+import requests
+import pprint
 
-# todo: pass the token into each of these functions instead of calling
+# ---------------------------------------- OPEN ROUTE SERVICE API FUNCTIONS --------------------------------------------
 
-# This function returns a list of dictionaries of playlists on Spotify from the query: walking.
-def search_walking_playlists(access_token):
-    # access_token = get_access_token()
-    # if not access_token:
-    #     return jsonify({"error": "Failed to get access token"}), 500
+# Returns a tuple containing the coordinates for the start location and the coordinates for the end location.
+# Accepts an API key (str), a start destination (str), and an end destination (str).
+def get_lat_lon(key, start_destination, end_destination):
 
     query = urllib.parse.urlencode({
-        "q": "walking",
+        "api_key": key,
+        "text": start_destination,
+    })
+
+    url = f"https://api.openrouteservice.org/geocode/search?{query}"
+    headers = {
+        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+    }
+    call = requests.get(url, headers=headers) # todo: put this within a try/except block
+
+    # pprint.pprint(call.json())
+    # print("Here are the start coordinates:", call.json()['features'][0]['geometry']['coordinates'])
+
+    query2 = urllib.parse.urlencode({
+        "api_key": key,
+        "text": end_destination,
+    })
+
+    url2 = f"https://api.openrouteservice.org/geocode/search?{query2}"
+    headers2 = {
+        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+    }
+    call2 = requests.get(url2, headers=headers2)
+
+    # print("Here are the end coordinates:", call2.json()['features'][0]['geometry']['coordinates'])
+    return [call.json()['features'][0]['geometry']['coordinates'], call2.json()['features'][0]['geometry']['coordinates']]
+
+# Returns the duration in minutes of the travel time from the start destination to the end destination. Rounds down.
+def get_travel_duration(key, travel_type, start_destination, end_destination):
+
+    travel_type = "driving-car" # todo: allow users to change this
+
+    locations = get_lat_lon(key, start_destination, end_destination)
+
+    body = {"locations": locations,
+            "metrics": ["duration"]}
+
+    headers = {
+        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+        'Authorization': key,
+        'Content-Type': 'application/json; charset=utf-8'
+    }
+    call = requests.post('https://api.openrouteservice.org/v2/matrix/' + travel_type, json=body, headers=headers)
+
+    # pprint.pprint(call.json())
+
+    seconds = call.json()['durations'][0][1]
+    minutes = int(seconds) // 60
+
+    return minutes
+
+
+# --------------------------------------------------- SPOTiFY API FUNCTIONS --------------------------------------------
+
+# This function returns a list of dictionaries of playlists on Spotify from the query: walking.
+def search_walking_playlists(access_token, search="walking"):
+
+    query = urllib.parse.urlencode({
+        "q": search,
         "type": "playlist",
         "market": "US",
         "limit": 10
@@ -122,3 +179,14 @@ def get_length_tracks(playlist, access_token):
                 return total_time
         except urllib.error.HTTPError as e:
             print("Failed to get access token: {}".format(e))
+
+def main():
+    # get_lat_lon(projectsecrets.openroute_service_key, "University of Washington, Seattle", "340 NW 47th St, Seattle, WA, 98107")
+
+    print(get_travel_duration(projectsecrets.openroute_service_key, "driving-car", "575 Bellevue Square, Bellevue", "340 NW 47th St, Seattle, WA, 98107"))
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (NameError, SyntaxError):
+        pass
