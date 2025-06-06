@@ -33,12 +33,12 @@ def index():
 
     # this was literally just working and now its not asking for me to sign in with my spotify account, maybe it was too many tries in the hour??
     print(dir(oauth.spotify))
+    #
+    # access_token = oauth.spotify.get("access_token")["access_token"]
+    # print("Access Token:", access_token)
+    # pprint.pprint(get_length_tracks(access_token))
 
-    access_token = oauth.spotify.get("access_token")["access_token"]
-    print("Access Token:", access_token)
-    pprint.pprint(get_length_tracks(access_token))
-
-    # return render_template("index.html", x=None)
+    return render_template("index.html", x=None)
 
 @app.route("/login")
 def login():
