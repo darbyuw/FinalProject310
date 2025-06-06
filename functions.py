@@ -251,7 +251,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist):
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-    # get each track id from rec_playlist to add to new playlist:
+    # get each track id from recommended playlist to add to new playlist:
     playlist_id = rec_playlist[0]["id"]
     playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
     req2 = urllib.request.Request(playlist_url, headers=headers)
@@ -265,7 +265,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist):
                 track_info = item.get("track")
                 if track_info and "id" in track_info:
                     tracks.append({
-                        "id": track_info["id"]
+                        "id": track_info["id"] # with track id we will copy into new playlist
                     })
                 else:
                     print(f"Error or missing track info: {item}")
@@ -274,6 +274,8 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist):
 
     for track in tracks:
         # add track to new playlist using add items API
+        # create comma seperated list of track uris in the format: "spotify:track:akshdgksjhdflk"
+
 
     # use loops to copy each track item into new playlist using Add Items to Playlist API
          # call get_length_tracks() each time you add one of the tracks. Stop adding songs when you reach the desired length (ex: 15 min)
