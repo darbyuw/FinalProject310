@@ -202,15 +202,84 @@ def get_length_tracks(access_token, search="walking"):
 
 def get_users_profile(access_token):
     # Get Current User's Profile API to get the Spotify User ID (in order to create a playlist on their account)
-    return None
+    url = "https://api.spotify.com/v1/me"
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
 
-def copy_playlist_into_library(access_token):
+    req = urllib.request.Request(url, headers=headers)
+
+    try:
+        with urllib.request.urlopen(req) as res:
+            res_data = res.read()
+            data = json.loads(res_data)
+
+            user_id = str(data["id"])
+            return user_id
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode()
+        print(f"HTTPError {e.code}: {error_body}")
+        return jsonify({"error": f"HTTPError {e.code}", "details": error_body}), e.code
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+def copy_playlist_into_library(access_token, user_id, rec_playlist):
     # save the recommended playlist to the user's account using Create Playlist API --> this creates an empty playlist
-    # get the playlist ID from the new playlist
+    body = urllib.parse.urlencode({
+        "name": "Your New Perfect Length Playlist",
+        "description": "A playlist corresponding to the length of your travel time.",
+        "public": False
+    })
+    url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
+
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    req = urllib.request.Request(url, headers=headers)
+
+    try:
+        with urllib.request.urlopen(req) as res:
+            res_data = res.read()
+            data = json.loads(res_data)
+            # get the playlist ID from the new playlist
+            playlist_id = data["id"]
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+    # get each track id from rec_playlist to add to new playlist:
+    playlist_id = rec_playlist[0]["id"]
+    playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+    req2 = urllib.request.Request(playlist_url, headers=headers)
+    try:
+        with urllib.request.urlopen(req2) as res:
+            res_data = res.read()
+            playlists = json.loads(res_data)
+            # get the tracks from the track list in playlist:
+            tracks = []
+            for item in playlists.get("items", []):
+                track_info = item.get("track")
+                if track_info and "id" in track_info:
+                    tracks.append({
+                        "id": track_info["id"]
+                    })
+                else:
+                    print(f"Error or missing track info: {item}")
+    except urllib.error.HTTPError as e:
+        print("Failed to get access token: {}".format(e))
+
+    for track in tracks:
+        # add track to new playlist using add items API
+
     # use loops to copy each track item into new playlist using Add Items to Playlist API
          # call get_length_tracks() each time you add one of the tracks. Stop adding songs when you reach the desired length (ex: 15 min)
     # account for short playlists: if new playlist never reaches desired length --> use Search For Item API again
         # add this song to the playlist and continue until you reach desired length
+    # return playlist uri/id
     return None
 
 def search_songs_to_extend_playlist(access_token):
