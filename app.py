@@ -28,29 +28,36 @@ oauth.register(
 def index():
     try:
         token = session["spotify-token"]
+        print(request.args)
     except KeyError:
         return redirect(url_for("login"))
 
-    # this was literally just working and now its not asking for me to sign in with my spotify account, maybe it was too many tries in the hour??
-    print(dir(oauth.spotify))
+    # print("OAUTH:")
+    # print(dir(oauth.spotify))
     #
-    # access_token = oauth.spotify.get("access_token")["access_token"]
+    access_token = session["spotify-token"]["access_token"]
     # print("Access Token:", access_token)
-    # pprint.pprint(get_length_tracks(access_token))
+    get_length_tracks(access_token)
 
-    return render_template("index.html", x=None)
+    return render_template("index.html", x=get_length_tracks(access_token))
 
 @app.route("/login")
 def login():
     redirect_uri = url_for('authorize', _external=True)
-    print(redirect_uri)
+    print("Redirect URI being sent to Spotify: ", redirect_uri)
     return oauth.spotify.authorize_redirect(redirect_uri)
 
 @app.route("/spotifyauthorize")
 def authorize():
-    token = oauth.spotify.authorize_access_token()
-    session["spotify-token"] = token
-    return token
+    print("Request args:", request.args)
+    try:
+        token = oauth.spotify.authorize_access_token()
+        print("Token received:", token)
+        session["spotify-token"] = token
+        return redirect(url_for('index'))
+    except Exception as e:
+        print("OAuth token error:", e)
+        return f"OAuth token error: {e}", 400
 
 # --------------------------------------------------- MY PAGES --------------------------------------------------
 @app.route('/about')

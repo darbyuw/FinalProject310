@@ -118,9 +118,9 @@ def search_playlists(access_token, search="walking"):
 # This function gets the length in ms of each song within the playlist
 # and then adds up the total length of the playlist and returns the value in seconds.
 def get_length_tracks(access_token, search="walking"):
-    print("Access Token:", access_token)
+    # print("Access Token:", access_token)
     playlist = search_playlists(access_token, search)
-    print(playlist)
+    # print(playlist)
 
     if not playlist:
         print("No playlists found.")
@@ -144,15 +144,22 @@ def get_length_tracks(access_token, search="walking"):
             playlists = json.loads(res_data)
             # get the tracks from the track list in playlist:
             tracks = []
-            for item in playlists.get("playlists", {}).get("items", []):
+            for item in playlists.get("items", []):
                 # print("inside loop")
-                if item and "track" in item:
+                # if item and "track" in item:
+                #     tracks.append({
+                #         "id": item["track"]["id"]
+                #     })
+                #     # print("Went inside for loop")
+                # else:
+                #     print(f"Error: {item}")
+                track_info = item.get("track")
+                if track_info and "id" in track_info:
                     tracks.append({
-                        "id": item["track"]["id"]
+                        "id": track_info["id"]
                     })
-                    # print("Went inside for loop")
                 else:
-                    print(f"Error: {item}")
+                    print(f"Error or missing track info: {item}")
     except urllib.error.HTTPError as e:
         print("Failed to get access token: {}".format(e))
 
@@ -176,7 +183,7 @@ def get_length_tracks(access_token, search="walking"):
 
         except urllib.error.HTTPError as e:
             print("Failed to get access token: {}".format(e))
-    return total_time
+    return total_time / 60000
 
 
 
