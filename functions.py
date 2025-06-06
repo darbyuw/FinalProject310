@@ -186,6 +186,37 @@ def get_length_tracks(access_token, search="walking"):
     return total_time / 60000
 
 
+# TODO: make a function for making the playlist longer or shorter
+    # should this be two functions?? one function: pass in a playlist and it removes the last track, another function: pass in playlist, adds one track
+        # but what track would it add?? maybe the first song that pops up when you do a search query for the search term (ex: "walking" songs)
+    # step 1: Get Current User's Profile API to get the Spotify User ID (in order to create a playlist on their account)
+    # step 2: save the recommended playlist to the user's account using Create Playlist API --> this creates an empty playlist
+    # step 2: use loops to copy each track item into new playlist using Add Items to Playlist API
+        # step 2.5: each time you add one of the tracks, check the new playlist length. Stop adding songs when you reach the desired length (ex: 15 min)
+    # step 3: account for short playlists: if new playlist never reaches desired length --> use Search For Item API again
+    # step 4: search for and return a song that fits the original query (ex: walking)
+    # step 5: add this song to the short playlist and continue until you reach desired length
+    # todo: find out if you can change hte travel_type to walking for the openroute service api
+    # todo: consider allowing users to enter one word to describe the type of playlist they want
+
+
+def get_users_profile(access_token):
+    # Get Current User's Profile API to get the Spotify User ID (in order to create a playlist on their account)
+    return None
+
+def copy_playlist_into_library(access_token):
+    # save the recommended playlist to the user's account using Create Playlist API --> this creates an empty playlist
+    # get the playlist ID from the new playlist
+    # use loops to copy each track item into new playlist using Add Items to Playlist API
+         # call get_length_tracks() each time you add one of the tracks. Stop adding songs when you reach the desired length (ex: 15 min)
+    # account for short playlists: if new playlist never reaches desired length --> use Search For Item API again
+        # add this song to the playlist and continue until you reach desired length
+    return None
+
+def search_songs_to_extend_playlist(access_token):
+    # search for and return a song that fits the original query (ex: walking)
+    return None
+
 
 def main():
     # get_lat_lon(projectsecrets.openroute_service_key, "University of Washington, Seattle", "340 NW 47th St, Seattle, WA, 98107")
