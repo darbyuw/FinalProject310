@@ -104,11 +104,11 @@ def search_playlists(access_token, search="walking"):
 
     except urllib.error.HTTPError as e:
         error_body = e.read().decode()
-        print(f"HTTPError {e.code}: {error_body}")
+        print(f"HTTPError during search for rec_playlist: {e.code}: {error_body}")
         return jsonify({"error": f"HTTPError {e.code}", "details": error_body}), e.code
     except Exception as e:
         print(f"Error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error during search for rec playlist: ": str(e)}), 500
 
 
 
@@ -187,8 +187,8 @@ def get_length_tracks(access_token, playlist):
 
 def get_users_profile(access_token):
     # Get Current User's Profile API to get the Spotify User ID (in order to create a playlist on their account)
-    print("Access token type:", type(access_token))
-    print("Access token repr:", repr(access_token))
+    # print("Access token type:", type(access_token))
+    # print("Access token repr:", repr(access_token))
 
     url = "https://api.spotify.com/v1/me"
     headers = {
@@ -204,9 +204,9 @@ def get_users_profile(access_token):
             return data["id"]
     except urllib.error.HTTPError as e:
         error_body = e.read().decode()
-        raise Exception(f"HTTPError {e.code}: {error_body}")
+        raise Exception(f"Error getting user_id: {e.code}: {error_body}")
     except Exception as e:
-        raise Exception(f"Error: {str(e)}")
+        raise Exception(f"Error getting user_id: {str(e)}")
 
     # try:
     #     with urllib.request.urlopen(req) as res:
@@ -226,6 +226,10 @@ def get_users_profile(access_token):
 
 def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_duration, search="walking"):
     # save the recommended playlist to the user's account using Create Playlist API --> this creates an empty playlist
+    if not rec_playlist:
+        print("No recommended playlist found.")
+
+    pprint.pprint(rec_playlist)
     body = {
         "name": "Your New Perfect Length Playlist",
         "description": "A playlist corresponding to the length of your travel time.",
@@ -238,7 +242,6 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
-    # response = requests.post(url, headers=headers, json=body)
     req = urllib.request.Request(url, headers=headers, data=body_encoded, method="POST")
 
     try:
@@ -249,8 +252,8 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
             new_playlist_id = data["id"]
 
     except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        print(f"Error creating playlist in user's library: {str(e)}")
+
 
     print("playlsit is is this: ", new_playlist_id)
     # get each track id from recommended playlist to add to new playlist:
@@ -270,9 +273,9 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
                         "id": track_info["id"] # with track id we will copy into new playlist
                     })
                 else:
-                    print(f"Error or missing track info: {item}")
+                    print(f"Error or missing track info when getting tracks from rec_playlist: {item}")
     except urllib.error.HTTPError as e:
-        print("Failed to get access token: {}".format(e))
+        print("Failed to get access token when getting tracks from rec_playlist: {}".format(e))
     # get list of all track ID's from rec playlist
     track_uris = []
     for track in tracks:
@@ -376,10 +379,10 @@ def search_song_to_extend_playlist(access_token, search="walking"):
 
     except urllib.error.HTTPError as e:
         error_body = e.read().decode()
-        print(f"HTTPError {e.code}: {error_body}")
+        print(f"HTTPError during search song to extend playlist {e.code}: {error_body}")
         return jsonify({"error": f"HTTPError {e.code}", "details": error_body}), e.code
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error during search song to extend playlist: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 

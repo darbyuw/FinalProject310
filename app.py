@@ -21,7 +21,7 @@ oauth.register(
     access_token_url="https://accounts.spotify.com/api/token",
     api_base_url="https://api.spotify.com/v1/",
     client_kwargs={
-        'scope': 'playlist-read-private user-top-read'
+        'scope': 'playlist-read-private user-top-read playlist-modify-private'
     }
 )
 # --------------------------------------------------- AUTHORIZE USER PAGES --------------------------------------------------
@@ -65,11 +65,11 @@ def results():
     token = session["spotify-token"]["access_token"]
     if request.method == 'POST':
         travel_duration = get_travel_duration(openroute_service_key, request.form["start_location"], request.form["end_location"])
-        try:
-            user_id = get_users_profile(token)
-        except Exception as e:
-            print(f"Failed to get user ID: {e}")
-        rec_playlist = search_playlists(token, request.form["search_term"])
+        user_id = get_users_profile(token)
+        if request.form["search_term"]:
+            rec_playlist = search_playlists(token, request.form["search_term"])
+        else:
+            rec_playlist = search_playlists(token)
         final_playlist = copy_playlist_into_library(token, user_id, rec_playlist, travel_duration)
             # todo: how to get playlist title, description and user for the results page??
         return render_template("results.html", playlist=final_playlist, legnth=travel_duration)
