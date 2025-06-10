@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+ <div class="row">
+  <div class="col-md-8 offset-md-2 text-center" >
+    <h2>
+        Your perfect length playlist:
+    </h2>
+    <h3>
+        {{ length }} minutes
+    </h3>
+    </div>
+  </div>
+{% if length == 0 %}
+<div class="container">
+    <div class="row">
+        <div class="col-8 offset-2">
+            <div class="alert alert-primary" role="alert" id = "description">Sorry, we could not find a playlist for your journey. Please go back and try again.</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Change this to the bootstrap card shape that you want! -->
+    <div class="row">
+      <div class="col-md-8 offset-md-2" >
+        <div class="card" >
+          <div class="card-body">
+              <a class="card-title" href="{{ playlist.url }}"><h5>{{ playlist.title }} </h5></a>
+                <!-- ADD playlist image!! -->
+              <p class="card-text"> {{ playlist.description }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+{% endblock%}

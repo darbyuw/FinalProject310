@@ -5,7 +5,8 @@ import pprint
 from flask import Flask, redirect, session, url_for, render_template, request, jsonify
 from authlib.integrations.flask_client import OAuth
 
-from functions import get_length_tracks, get_travel_duration, search_playlists
+from functions import get_length_tracks, get_travel_duration, search_playlists, get_lat_lon, get_users_profile, \
+    copy_playlist_into_library
 
 from projectsecrets import app_secret, spotify_client_id, spotify_client_secret
 app = Flask(__name__)
@@ -35,11 +36,11 @@ def index():
     # print("OAUTH:")
     # print(dir(oauth.spotify))
     #
-    access_token = session["spotify-token"]["access_token"]
+    #access_token = session["spotify-token"]["access_token"]
     # print("Access Token:", access_token)
-    get_length_tracks(access_token)
+    #get_length_tracks(access_token)
 
-    return render_template("index.html", x=get_length_tracks(access_token))
+    return render_template("index.html")
 
 @app.route("/login")
 def login():
@@ -58,6 +59,20 @@ def authorize():
     except Exception as e:
         print("OAuth token error:", e)
         return f"OAuth token error: {e}", 400
+
+@app.route('/results', methods=['GET', 'POST'])
+def results():
+    token = session["spotify-token"]
+    if request.method == 'POST':
+        [lat, lon] = get_lat_lon(token, request.form["start_location"], request.form["end_location"])
+        travel_duration = get_travel_duration(token, lat, lon)
+        user_id = get_users_profile(token)
+        rec_playlist = search_playlists(token, request.form["search_term"])
+        final_playlist = copy_playlist_into_library(token, user_id, rec_playlist, travel_duration)
+            # todo: how to get playlist title, description and user for the results page??
+        return render_template("results.html", playlist=final_playlist, legnth=travel_duration)
+    else:
+        return "<html><head></head><body><p>HTTP 400 error: Wrong HTTP request method</p></body></html>"
 
 # --------------------------------------------------- MY PAGES --------------------------------------------------
 @app.route('/about')

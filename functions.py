@@ -24,7 +24,7 @@ def get_lat_lon(key, start_destination, end_destination):
     }
     call = requests.get(url, headers=headers) # todo: put this within a try/except block
 
-    # pprint.pprint(call.json())
+    pprint.pprint(call.json())
     # print("Here are the start coordinates:", call.json()['features'][0]['geometry']['coordinates'])
 
     query2 = urllib.parse.urlencode({
@@ -38,7 +38,6 @@ def get_lat_lon(key, start_destination, end_destination):
     }
     call2 = requests.get(url2, headers=headers2)
 
-    # print("Here are the end coordinates:", call2.json()['features'][0]['geometry']['coordinates'])
     return [call.json()['features'][0]['geometry']['coordinates'], call2.json()['features'][0]['geometry']['coordinates']]
 
 # Returns the duration in minutes of the travel time from the start destination to the end destination. Rounds down.
@@ -235,7 +234,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
         "Content-Type": "application/json"
     }
     # response = requests.post(url, headers=headers, json=body)
-    req = urllib.request.Request(url, headers=headers, json=body, method="POST") #todo: THIS WILL CAUSE ERROR!! WHY NO JSON BODY??
+    req = urllib.request.Request(url, headers=headers, json=body, method="POST") #todo: THIS WILL CAUSE ERROR! WHY NO JSON BODY?
 
     try:
         with urllib.request.urlopen(req) as res:
