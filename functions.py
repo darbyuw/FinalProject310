@@ -235,17 +235,18 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist):
     url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
 
     headers = {
-        "Authorization": f"Bearer {access_token}"
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
     }
-
-    req = urllib.request.Request(url, headers=headers)
+    # response = requests.post(url, headers=headers, json=body)
+    req = urllib.request.Request(url, headers=headers, json=body, method="POST") # can this be posted??
 
     try:
         with urllib.request.urlopen(req) as res:
             res_data = res.read()
             data = json.loads(res_data)
             # get the playlist ID from the new playlist
-            playlist_id = data["id"]
+            new_playlist_id = data["id"]
 
     except Exception as e:
         print(f"Error: {str(e)}")
@@ -272,13 +273,27 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist):
     except urllib.error.HTTPError as e:
         print("Failed to get access token: {}".format(e))
 
-    for track in tracks:
+    for track in tracks: # tracks is a list of track ID's which is the end part of a URI
         # add track to new playlist using add items API
-        # create comma seperated list of track uris in the format: "spotify:track:akshdgksjhdflk"
+        # create list of track uris in the format: "spotify:track:akshdgksjhdflk"
+        # since we're adding a list of all the tracks at once to the new playlsit,
+        # we cannot check playlist length each time we add a new track
+        track_uris = []
+        track_uris.append("spotify:track:" + track["id"])
+    # copy all tracks into new playlist using Add Items to Playlist API:
+    body = urllib.parse.urlencode({
+        "uris": track_uris
+    })
+    url_add_tracks = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    req3 = urllib.request.Request(url_add_tracks, headers=headers, json=body, method="POST")
 
 
-    # use loops to copy each track item into new playlist using Add Items to Playlist API
          # call get_length_tracks() each time you add one of the tracks. Stop adding songs when you reach the desired length (ex: 15 min)
+
     # account for short playlists: if new playlist never reaches desired length --> use Search For Item API again
         # add this song to the playlist and continue until you reach desired length
     # return playlist uri/id

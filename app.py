@@ -28,7 +28,7 @@ oauth.register(
 def index():
     try:
         token = session["spotify-token"]
-        print(request.args)
+        # print(request.args)
     except KeyError:
         return redirect(url_for("login"))
 
@@ -44,7 +44,7 @@ def index():
 @app.route("/login")
 def login():
     redirect_uri = url_for('authorize', _external=True)
-    print("Redirect URI being sent to Spotify: ", redirect_uri)
+    # print("Redirect URI being sent to Spotify: ", redirect_uri)
     return oauth.spotify.authorize_redirect(redirect_uri)
 
 @app.route("/spotifyauthorize")
@@ -52,7 +52,7 @@ def authorize():
     print("Request args:", request.args)
     try:
         token = oauth.spotify.authorize_access_token()
-        print("Token received:", token)
+        # print("Token received:", token)
         session["spotify-token"] = token
         return redirect(url_for('index'))
     except Exception as e:
