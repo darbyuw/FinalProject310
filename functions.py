@@ -221,7 +221,7 @@ def get_users_profile(access_token):
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_duration):
+def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_duration, search="walking"):
     # save the recommended playlist to the user's account using Create Playlist API --> this creates an empty playlist
     body = urllib.parse.urlencode({
         "name": "Your New Perfect Length Playlist",
@@ -235,7 +235,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
         "Content-Type": "application/json"
     }
     # response = requests.post(url, headers=headers, json=body)
-    req = urllib.request.Request(url, headers=headers, json=body, method="POST")
+    req = urllib.request.Request(url, headers=headers, json=body, method="POST") #todo: THIS WILL CAUSE ERROR!! WHY NO JSON BODY??
 
     try:
         with urllib.request.urlopen(req) as res:
@@ -289,24 +289,77 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
 
     # ADD AND REMOVE SONGS FROM NEW PLAYLIST IN LIBRARY (UNTIL WITHIN 15 SEC OF TRAVEL TIME):
     length = get_length_tracks(access_token, playlist=rec_playlist)
-    if length < (travel_duration - 0.25): # 15 seconds = 0.25 minutes
-        # call search_songs_to_extend
-        # use Add Item to Playlist to add the URI to teh playlist
-    elif length > (travel_duration + 0.25):
-        # if length is more than duration, keep removing songs until you reach within 15 seconds of duration
-        # use the Remove Item from Playlist API
-        # get the last song from the list of URIs
-        # remove that song using the API
-    else:
-        # return playlist uri/id
-        return new_playlist_id
+    while length < (travel_duration - 0.25) or length > (travel_duration + 0.25):
+        if length < (travel_duration - 0.25): # 15 seconds = 0.25 minutes
+            # call search_song_to_extend
+            add_track_uri = search_song_to_extend_playlist(access_token, search)
+            # use Add Item to Playlist to add the URI to the playlist
+            body = urllib.parse.urlencode({
+                "uris": [add_track_uri] # no position, so it will add to the end of the playlist
+            })
+            url_add_track = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json"
+            }
+            req4 = urllib.request.Request(url_add_track, headers=headers, json=body, method="POST")
+            # todo: do i have to open the post request??
+        elif length > (travel_duration + 0.25):
+            # if length is more than duration, keep removing songs until you reach within 15 seconds of duration
+            # use the Remove Item from Playlist API
+            # get the last song from the list of URIs
+            remove_track_uri = track_uris[-1]
+            # remove that song using the API
+            body = urllib.parse.urlencode({
+                "tracks": [
+                    {
+                        "uri": remove_track_uri,
+                    }
+            ]})
+            url_remove_track = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json"
+            }
+            req3 = urllib.request.Request(url_remove_track, headers=headers, json=body, method="DELETE")
 
-def search_songs_to_extend_playlist(access_token, search="walking"):
-    # todo: adjust to allow user input
-    # search for and return a song that fits the original query (ex: walking)
-        # use search for item API
-        # return the URI of the track to add to playlist
-    return None
+    return new_playlist_id
+
+
+
+# Search for and return one track URI corresponding to the search term.
+def search_song_to_extend_playlist(access_token, search="walking"):
+    query = urllib.parse.urlencode({
+        "q": search,
+        "type": "track",
+        "limit": 1
+    })
+    url = f"https://api.spotify.com/v1/search?{query}"
+
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    req = urllib.request.Request(url, headers=headers)
+
+    try:
+        with urllib.request.urlopen(req) as res:
+            res_data = res.read()
+            data = json.loads(res_data)
+            # get the URI of the song to add
+            for item in data.get("tracks", {}).get("items", []):
+                if item and "uri" in item:
+                    track_uri = str(item["uri"])
+
+            return track_uri
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode()
+        print(f"HTTPError {e.code}: {error_body}")
+        return jsonify({"error": f"HTTPError {e.code}", "details": error_body}), e.code
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 def main():
