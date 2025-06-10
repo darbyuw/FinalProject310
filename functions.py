@@ -24,7 +24,7 @@ def get_lat_lon(key, start_destination, end_destination):
     }
     call = requests.get(url, headers=headers) # todo: put this within a try/except block
 
-    pprint.pprint(call.json())
+    # pprint.pprint(call.json())
     # print("Here are the start coordinates:", call.json()['features'][0]['geometry']['coordinates'])
 
     query2 = urllib.parse.urlencode({
@@ -41,7 +41,7 @@ def get_lat_lon(key, start_destination, end_destination):
     return [call.json()['features'][0]['geometry']['coordinates'], call2.json()['features'][0]['geometry']['coordinates']]
 
 # Returns the duration in minutes of the travel time from the start destination to the end destination. Rounds down.
-def get_travel_duration(key, travel_type, start_destination, end_destination):
+def get_travel_duration(key, start_destination, end_destination):
 
     travel_type = "driving-car" # todo: allow users to change this
 
@@ -56,8 +56,6 @@ def get_travel_duration(key, travel_type, start_destination, end_destination):
         'Content-Type': 'application/json; charset=utf-8'
     }
     call = requests.post('https://api.openrouteservice.org/v2/matrix/' + travel_type, json=body, headers=headers)
-
-    # pprint.pprint(call.json())
 
     seconds = call.json()['durations'][0][1]
     minutes = int(seconds) // 60
@@ -140,14 +138,6 @@ def get_length_tracks(access_token, playlist):
             # get the tracks from the track list in playlist:
             tracks = []
             for item in playlists.get("items", []):
-                # print("inside loop")
-                # if item and "track" in item:
-                #     tracks.append({
-                #         "id": item["track"]["id"]
-                #     })
-                #     # print("Went inside for loop")
-                # else:
-                #     print(f"Error: {item}")
                 track_info = item.get("track")
                 if track_info and "id" in track_info:
                     tracks.append({
@@ -227,6 +217,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
         "description": "A playlist corresponding to the length of your travel time.",
         "public": False
     })
+    body_encoded = json.dumps(body).encode("utf-8")
     url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
 
     headers = {
@@ -234,7 +225,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
         "Content-Type": "application/json"
     }
     # response = requests.post(url, headers=headers, json=body)
-    req = urllib.request.Request(url, headers=headers, json=body, method="POST") #todo: THIS WILL CAUSE ERROR! WHY NO JSON BODY?
+    req = urllib.request.Request(url, headers=headers, data=body_encoded, method="POST")
 
     try:
         with urllib.request.urlopen(req) as res:
@@ -247,6 +238,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+    print("playlsit is is this: ", new_playlist_id)
     # get each track id from recommended playlist to add to new playlist:
     playlist_id = rec_playlist[0]["id"]
     playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
@@ -267,24 +259,21 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
                     print(f"Error or missing track info: {item}")
     except urllib.error.HTTPError as e:
         print("Failed to get access token: {}".format(e))
-
-    for track in tracks: # tracks is a list of track ID's which is the end part of a URI
-        # add track to new playlist using add items API
-        # create list of track uris in the format: "spotify:track:akshdgksjhdflk"
-        # since we're adding a list of all the tracks at once to the new playlsit,
-        # we cannot check playlist length each time we add a new track
-        track_uris = []
+    # get list of all track ID's from rec playlist
+    track_uris = []
+    for track in tracks:
         track_uris.append("spotify:track:" + track["id"])
     # copy all tracks into new playlist using Add Items to Playlist API:
     body = urllib.parse.urlencode({
         "uris": track_uris
     })
+    body_encoded = json.dumps(body).encode("utf-8")
     url_add_tracks = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
-    req3 = urllib.request.Request(url_add_tracks, headers=headers, json=body, method="POST")
+    req3 = urllib.request.Request(url_add_tracks, headers=headers, data=body_encoded, method="POST")
 
     # ADD AND REMOVE SONGS FROM NEW PLAYLIST IN LIBRARY (UNTIL WITHIN 15 SEC OF TRAVEL TIME):
     length = get_length_tracks(access_token, playlist=rec_playlist)
@@ -296,13 +285,14 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
             body = urllib.parse.urlencode({
                 "uris": [add_track_uri] # no position, so it will add to the end of the playlist
             })
+            body_encoded = json.dumps(body).encode("utf-8")
             url_add_track = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"
             }
-            req4 = urllib.request.Request(url_add_track, headers=headers, json=body, method="POST")
-            # todo: do i have to open the post request??
+            req4 = urllib.request.Request(url_add_track, headers=headers, data=body_encoded, method="POST")
+            # todo: do i have to open the post request?? i don think so
         elif length > (travel_duration + 0.25):
             # if length is more than duration, keep removing songs until you reach within 15 seconds of duration
             # use the Remove Item from Playlist API
@@ -315,15 +305,17 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
                         "uri": remove_track_uri,
                     }
             ]})
+            body_encoded = json.dumps(body).encode("utf-8")
             url_remove_track = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"
             }
-            req3 = urllib.request.Request(url_remove_track, headers=headers, json=body, method="DELETE")
+            req3 = urllib.request.Request(url_remove_track, headers=headers, data=body_encoded, method="DELETE")
 
     return new_playlist_id
 
+#todo: get info on the playlist (like title, owner,etc) using the get playlist API? then use that to return the variables that you need for the html ??
 
 
 # Search for and return one track URI corresponding to the search term.
@@ -362,7 +354,7 @@ def search_song_to_extend_playlist(access_token, search="walking"):
 
 
 def main():
-    # get_lat_lon(projectsecrets.openroute_service_key, "University of Washington, Seattle", "340 NW 47th St, Seattle, WA, 98107")
+    get_lat_lon(projectsecrets.openroute_service_key, "University of Washington, Seattle", "340 NW 47th St, Seattle, WA, 98107")
 
     print(get_travel_duration(projectsecrets.openroute_service_key, "driving-car", "575 Bellevue Square, Bellevue", "340 NW 47th St, Seattle, WA, 98107"))
 

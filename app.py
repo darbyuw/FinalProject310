@@ -8,7 +8,7 @@ from authlib.integrations.flask_client import OAuth
 from functions import get_length_tracks, get_travel_duration, search_playlists, get_lat_lon, get_users_profile, \
     copy_playlist_into_library
 
-from projectsecrets import app_secret, spotify_client_id, spotify_client_secret
+from projectsecrets import app_secret, spotify_client_id, spotify_client_secret, openroute_service_key
 app = Flask(__name__)
 app.secret_key = app_secret
 
@@ -64,8 +64,7 @@ def authorize():
 def results():
     token = session["spotify-token"]
     if request.method == 'POST':
-        [lat, lon] = get_lat_lon(token, request.form["start_location"], request.form["end_location"])
-        travel_duration = get_travel_duration(token, lat, lon)
+        travel_duration = get_travel_duration(openroute_service_key, request.form["start_location"], request.form["end_location"])
         user_id = get_users_profile(token)
         rec_playlist = search_playlists(token, request.form["search_term"])
         final_playlist = copy_playlist_into_library(token, user_id, rec_playlist, travel_duration)
