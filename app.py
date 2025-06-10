@@ -75,27 +75,27 @@ def results():
         return "<html><head></head><body><p>HTTP 400 error: Wrong HTTP request method</p></body></html>"
 
 # --------------------------------------------------- MY PAGES --------------------------------------------------
-@app.route('/about')
-def about():
-    with urllib.request.urlopen('https://depts.washington.edu/ledlab/teaching/is-it-raining-in-seattle/') as response:
-        is_it_raining_in_seattle = response.read().decode()
-
-    if is_it_raining_in_seattle == "true":
-        return render_template("index.html", x="Yes")
-    else:
-        return render_template("index.html", x="No")
-
-# a page for getting the playlist
-@app.route('/getplaylist')
-def printplaylists():
-    # get the playlist:
-    playlists = search_playlists()
-    # get info from each track
-    time = get_length_tracks(playlists)
-
-    return render_template("index.html", x=time)
-
-
-@app.route('/maps')
-def maps():
-    return "maps"
+# @app.route('/about')
+# def about():
+#     with urllib.request.urlopen('https://depts.washington.edu/ledlab/teaching/is-it-raining-in-seattle/') as response:
+#         is_it_raining_in_seattle = response.read().decode()
+#
+#     if is_it_raining_in_seattle == "true":
+#         return render_template("index.html", x="Yes")
+#     else:
+#         return render_template("index.html", x="No")
+#
+# # a page for getting the playlist
+# @app.route('/getplaylist')
+# def printplaylists():
+#     # get the playlist:
+#     playlists = search_playlists()
+#     # get info from each track
+#     time = get_length_tracks(playlists)
+#
+#     return render_template("index.html", x=time)
+#
+#
+# @app.route('/maps')
+# def maps():
+#     return "maps"
