@@ -1,8 +1,30 @@
 {% extends "base.html" %}
 {% block content %}
+<div class = "row">
+<div class="col-6 offset-md-3">
+<form action="/results" method="post" class="w-100">
+    <h2>
+    Please enter the following information about your journey.
+    </h2>
+    <p>
+        <label for="start location">Start Location</label><br>
+        <input type="text" class = "form-control" id="start location" name="start_location" placeholder="Enter an address here">
+    </p>
+    <p>
+        <label for="end location">Maximum number of results</label><br>
+        <input type="text" class = "form-control" id="end location" name="end_location" placeholder="Enter another address here">
+    </p>
 
-<p>
-    {{ x }}
-</p>
+     <p>
+        <label for="search">Radius within which to return results (in miles)</label><br>
+        <input type="text" class = "form-control" id="search" name="search_term" placeholder="Walking">
+    </p>
 
-{% endblock%}
+    <p>
+        <button type="submit" class = "btn btn-primary">Submit</button>
+    </p>
+
+</form>
+    </div>
+</div>
+{% endblock %}
