@@ -21,7 +21,7 @@ oauth.register(
     access_token_url="https://accounts.spotify.com/api/token",
     api_base_url="https://api.spotify.com/v1/",
     client_kwargs={
-        'scope': 'playlist-read-private user-top-read playlist-modify-private'
+        'scope': 'user-read-private playlist-modify-private playlist-read-private'
     }
 )
 # --------------------------------------------------- AUTHORIZE USER PAGES --------------------------------------------------
@@ -50,7 +50,7 @@ def login():
 
 @app.route("/spotifyauthorize")
 def authorize():
-    print("Request args:", request.args)
+    # print("Request args:", request.args)
     try:
         token = oauth.spotify.authorize_access_token()
         # print("Token received:", token)

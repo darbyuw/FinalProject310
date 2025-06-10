@@ -242,17 +242,28 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
-    req = urllib.request.Request(url, headers=headers, data=body_encoded, method="POST")
+    # req = urllib.request.Request(url, headers=headers, data=body_encoded, method="POST")
+    #
+    # try:
+    #     with urllib.request.urlopen(req) as res:
+    #         res_data = res.read()
+    #         data = json.loads(res_data)
+    #         # get the playlist ID from the new playlist
+    #         new_playlist_id = data["id"]
+    #
+    # except Exception as e:
+    #     print(f"Error creating playlist in user's library: {str(e)}")
 
-    try:
-        with urllib.request.urlopen(req) as res:
-            res_data = res.read()
-            data = json.loads(res_data)
-            # get the playlist ID from the new playlist
-            new_playlist_id = data["id"]
+    response = requests.post(url, headers=headers, data=body_encoded)
 
-    except Exception as e:
-        print(f"Error creating playlist in user's library: {str(e)}")
+    if response.status_code == 201:
+        playlist = response.json()
+        print(f"Playlist created: {playlist['name']} (ID: {playlist['id']})")
+        new_playlist_id = str(playlist["id"])
+    else:
+        print(f"Failed to create playlist. Status code: {response.status_code}")
+        print("Response:", response.json())
+        return None
 
 
     print("playlsit is is this: ", new_playlist_id)
@@ -388,8 +399,9 @@ def search_song_to_extend_playlist(access_token, search="walking"):
 
 def main():
     get_lat_lon(projectsecrets.openroute_service_key, "University of Washington, Seattle", "340 NW 47th St, Seattle, WA, 98107")
+    #
+    # print(get_travel_duration(projectsecrets.openroute_service_key, "driving-car", "575 Bellevue Square, Bellevue", "340 NW 47th St, Seattle, WA, 98107"))
 
-    print(get_travel_duration(projectsecrets.openroute_service_key, "driving-car", "575 Bellevue Square, Bellevue", "340 NW 47th St, Seattle, WA, 98107"))
 
 if __name__ == "__main__":
     try:
