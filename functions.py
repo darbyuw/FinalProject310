@@ -187,6 +187,9 @@ def get_length_tracks(access_token, playlist):
 
 def get_users_profile(access_token):
     # Get Current User's Profile API to get the Spotify User ID (in order to create a playlist on their account)
+    print("Access token type:", type(access_token))
+    print("Access token repr:", repr(access_token))
+
     url = "https://api.spotify.com/v1/me"
     headers = {
         "Authorization": f"Bearer {access_token}"
@@ -198,25 +201,36 @@ def get_users_profile(access_token):
         with urllib.request.urlopen(req) as res:
             res_data = res.read()
             data = json.loads(res_data)
-
-            user_id = str(data["id"])
-            return user_id
-
+            return data["id"]
     except urllib.error.HTTPError as e:
         error_body = e.read().decode()
-        print(f"HTTPError {e.code}: {error_body}")
-        return jsonify({"error": f"HTTPError {e.code}", "details": error_body}), e.code
+        raise Exception(f"HTTPError {e.code}: {error_body}")
     except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        raise Exception(f"Error: {str(e)}")
+
+    # try:
+    #     with urllib.request.urlopen(req) as res:
+    #         res_data = res.read()
+    #         data = json.loads(res_data)
+    #
+    #         user_id = str(data["id"])
+    #         return user_id
+    #
+    # except urllib.error.HTTPError as e:
+    #     error_body = e.read().decode()
+    #     print(f"HTTPError {e.code}: {error_body}")
+    #     return jsonify({"error": f"HTTPError {e.code}", "details": error_body}), e.code
+    # except Exception as e:
+    #     print(f"Error: {str(e)}")
+    #     return jsonify({"error": str(e)}), 500
 
 def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_duration, search="walking"):
     # save the recommended playlist to the user's account using Create Playlist API --> this creates an empty playlist
-    body = urllib.parse.urlencode({
+    body = {
         "name": "Your New Perfect Length Playlist",
         "description": "A playlist corresponding to the length of your travel time.",
         "public": False
-    })
+    }
     body_encoded = json.dumps(body).encode("utf-8")
     url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
 
@@ -264,9 +278,9 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
     for track in tracks:
         track_uris.append("spotify:track:" + track["id"])
     # copy all tracks into new playlist using Add Items to Playlist API:
-    body = urllib.parse.urlencode({
+    body = {
         "uris": track_uris
-    })
+    }
     body_encoded = json.dumps(body).encode("utf-8")
     url_add_tracks = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
     headers = {
@@ -274,17 +288,22 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
         "Content-Type": "application/json"
     }
     req3 = urllib.request.Request(url_add_tracks, headers=headers, data=body_encoded, method="POST")
-
+    try:
+        with urllib.request.urlopen(req3) as res:
+            res_data = res.read()
+    except Exception as e:
+        print("Error during copy all tracks into new playlist: {}".format(e))
     # ADD AND REMOVE SONGS FROM NEW PLAYLIST IN LIBRARY (UNTIL WITHIN 15 SEC OF TRAVEL TIME):
     length = get_length_tracks(access_token, playlist=rec_playlist)
-    while length < (travel_duration - 0.25) or length > (travel_duration + 0.25):
+    max_attempts = 0
+    while length < (travel_duration - 0.25) or length > (travel_duration + 0.25) and max_attempts < 100:
         if length < (travel_duration - 0.25): # 15 seconds = 0.25 minutes
             # call search_song_to_extend
             add_track_uri = search_song_to_extend_playlist(access_token, search)
             # use Add Item to Playlist to add the URI to the playlist
-            body = urllib.parse.urlencode({
+            body = {
                 "uris": [add_track_uri] # no position, so it will add to the end of the playlist
-            })
+            }
             body_encoded = json.dumps(body).encode("utf-8")
             url_add_track = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
             headers = {
@@ -292,27 +311,38 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
                 "Content-Type": "application/json"
             }
             req4 = urllib.request.Request(url_add_track, headers=headers, data=body_encoded, method="POST")
-            # todo: do i have to open the post request?? i don think so
+            try:
+                with urllib.request.urlopen(req4) as res:
+                    res_data = res.read()
+            except Exception as e:
+                print("Error during add track: {}".format(e))
+            max_attempts += 1
         elif length > (travel_duration + 0.25):
             # if length is more than duration, keep removing songs until you reach within 15 seconds of duration
             # use the Remove Item from Playlist API
             # get the last song from the list of URIs
             remove_track_uri = track_uris[-1]
             # remove that song using the API
-            body = urllib.parse.urlencode({
+            body = {
                 "tracks": [
                     {
                         "uri": remove_track_uri,
                     }
-            ]})
+            ]}
             body_encoded = json.dumps(body).encode("utf-8")
             url_remove_track = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"
             }
-            req3 = urllib.request.Request(url_remove_track, headers=headers, data=body_encoded, method="DELETE")
-
+            req5 = urllib.request.Request(url_remove_track, headers=headers, data=body_encoded, method="DELETE")
+            try:
+                with urllib.request.urlopen(req5) as res:
+                    res_data = res.read()
+            except Exception as e:
+                print("Error during remove track: {}".format(e))
+            max_attempts += 1
+        max_attempts += 1
     return new_playlist_id
 
 #todo: get info on the playlist (like title, owner,etc) using the get playlist API? then use that to return the variables that you need for the html ??
