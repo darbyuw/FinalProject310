@@ -117,11 +117,7 @@ def search_playlists(access_token, search="walking"):
 
 # This function gets the length in ms of each song within the playlist
 # and then adds up the total length of the playlist and returns the value in seconds.
-def get_length_tracks(access_token, search="walking"):
-    # print("Access Token:", access_token)
-    playlist = search_playlists(access_token, search)
-    # print(playlist)
-
+def get_length_tracks(access_token, playlist):
     if not playlist:
         print("No playlists found.")
         return 0
@@ -225,7 +221,7 @@ def get_users_profile(access_token):
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-def copy_playlist_into_library(access_token, user_id, rec_playlist):
+def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_duration):
     # save the recommended playlist to the user's account using Create Playlist API --> this creates an empty playlist
     body = urllib.parse.urlencode({
         "name": "Your New Perfect Length Playlist",
@@ -239,7 +235,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist):
         "Content-Type": "application/json"
     }
     # response = requests.post(url, headers=headers, json=body)
-    req = urllib.request.Request(url, headers=headers, json=body, method="POST") # can this be posted??
+    req = urllib.request.Request(url, headers=headers, json=body, method="POST")
 
     try:
         with urllib.request.urlopen(req) as res:
@@ -291,16 +287,25 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist):
     }
     req3 = urllib.request.Request(url_add_tracks, headers=headers, json=body, method="POST")
 
+    # ADD AND REMOVE SONGS FROM NEW PLAYLIST IN LIBRARY (UNTIL WITHIN 15 SEC OF TRAVEL TIME):
+    length = get_length_tracks(access_token, playlist=rec_playlist)
+    if length < (travel_duration - 0.25): # 15 seconds = 0.25 minutes
+        # call search_songs_to_extend
+        # use Add Item to Playlist to add the URI to teh playlist
+    elif length > (travel_duration + 0.25):
+        # if length is more than duration, keep removing songs until you reach within 15 seconds of duration
+        # use the Remove Item from Playlist API
+        # get the last song from the list of URIs
+        # remove that song using the API
+    else:
+        # return playlist uri/id
+        return new_playlist_id
 
-         # call get_length_tracks() each time you add one of the tracks. Stop adding songs when you reach the desired length (ex: 15 min)
-
-    # account for short playlists: if new playlist never reaches desired length --> use Search For Item API again
-        # add this song to the playlist and continue until you reach desired length
-    # return playlist uri/id
-    return None
-
-def search_songs_to_extend_playlist(access_token):
+def search_songs_to_extend_playlist(access_token, search="walking"):
+    # todo: adjust to allow user input
     # search for and return a song that fits the original query (ex: walking)
+        # use search for item API
+        # return the URI of the track to add to playlist
     return None
 
 
