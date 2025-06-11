@@ -1,30 +1,36 @@
 {% extends "base.html" %}
 {% block content %}
 <div class = "row">
-<div class="col-6 offset-md-3">
 <form action="/results" method="post" class="w-100">
-    <h2>
-    Please enter the following information about your journey.
-    </h2>
+    <div class="col-8 offset-2 text-center">
+        <p></p>
+        <h4>
+            Welcome to the Perfect Length Playlist Generator!
+        </h4>
+        <h6>
+            Please enter the following information about your journey.
+        </h6>
+    </div>
+    <div class="col-6 offset-md-3">
     <p>
         <label for="start location">Start Location</label><br>
-        <input type="text" class = "form-control" id="start location" name="start_location" placeholder="Enter an address here">
+        <input type="text" class = "form-control" id="start location" name="start_location" placeholder="Please enter an address or location.">
     </p>
     <p>
         <label for="end location">End Location</label><br>
-        <input type="text" class = "form-control" id="end location" name="end_location" placeholder="Enter another address here">
+        <input type="text" class = "form-control" id="end location" name="end_location" placeholder="Please enter an address or location.">
     </p>
 <!--    <p>-->
 <!--        <label for="travel type">Please enter travel type here (walking, driving, make this a checkbox!)</label><br>-->
 <!--        <input type="text" class = "form-control" id="travel type" name="type_travel" >-->
 <!--    </p>-->
      <p>
-        <label for="search">Search term to describe type of playlist (optional)</label><br>
+        <label for="search">Enter one word to describe your ideal playlist (optional):</label><br>
         <input type="text" class = "form-control" id="search" name="search_term" placeholder="Walking">
     </p>
 
     <p>
-        <button type="submit" class = "btn btn-primary">Generate My Playlist!</button>
+        <button type="submit" class = "btn btn-primary">Generate Playlist</button>
     </p>
 
 </form>

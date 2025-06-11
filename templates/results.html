@@ -2,15 +2,12 @@
 {% block content %}
  <div class="row">
   <div class="col-md-8 offset-md-2 text-center" >
-    <h2>
+    <h4>
         Your perfect length playlist:
-    </h2>
-    <h3>
-        Travel Duration: {{ duration }} minutes
-    </h3>
-        <h3>
-        Playlist Length: {{ playlist_length }} minutes
-        </h3>
+    </h4>
+      <h6> A playlist corresponding to the length of your travel time from {{ start }} to {{ end }}. </h6>
+      <p class="fw-light"> Travel Duration: {{ duration }} minutes </p>
+      <p class="fw-light"> Playlist Length: {{ playlist_length }} minutes </p>
     </div>
   </div>
 {% if length == 0 %}
@@ -27,10 +24,14 @@
     <div class="row">
       <div class="col-md-8 offset-md-2" >
         <div class="card" >
+            <a href ="{{ url }}">
+            <img src= "{{ images }}" class="card-img-top" alt="An image of the album cover of the first song in the playlist">
+            </a>
           <div class="card-body">
-              <a class="card-title" href="{{ url }}"><h5>{{ title }} </h5></a>
-                <!-- ADD playlist image!! -->
+              <h5> class="card-title" {{ title }} </h5>
               <p class="card-text"> {{ description }}</p>
+              <a href="{{ url }}" class="btn btn-primary">Go to playlist</a>
+
           </div>
         </div>
       </div>

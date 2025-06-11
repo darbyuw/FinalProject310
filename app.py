@@ -81,7 +81,8 @@ def results():
         images = final_playlist[0]["images"][0]["url"] # todo: adjust so that it gives four images
         playlist_length = get_length_tracks(token, playlist=final_playlist)
         return render_template("results.html", title=title, duration=travel_duration,
-                               owner=owner, playlist_length=playlist_length, url=url, description=description, images=images)
+                               owner=owner, playlist_length=playlist_length, url=url, description=description, images=images,
+                               start=request.form["start_location"], end=request.form["end_location"])
     else:
         return "<html><head></head><body><p>HTTP 400 error: Wrong HTTP request method</p></body></html>"
 
