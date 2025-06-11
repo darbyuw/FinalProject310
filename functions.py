@@ -278,8 +278,19 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
 
     if response.status_code == 201: #todo: take this out
         playlist = response.json()
+        # playlist = json.loads(res_data)
+        # playlist = response.json()
+        # print("Successfully created new playlist: ")
+        # print(playlist)
         print(f"Playlist created: {playlist['name']} (ID: {playlist['id']})")
         new_playlist_id = str(playlist["id"])
+        new_playlist = [{
+                    "name": playlist["name"],
+                    "url": playlist["external_urls"].get("spotify", ""),
+                    "tracks": playlist["tracks"],
+                    "id": playlist["id"]
+                }]
+        print(new_playlist)
     else:
         print(f"Failed to create playlist. Status code: {response.status_code}")
         print("Response:", response.json())
@@ -334,12 +345,12 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
     except Exception as e:
         print("Error during copy all tracks into new playlist: {}".format(e))
 
-    # ADD AND REMOVE SONGS FROM NEW PLAYLIST IN LIBRARY (UNTIL WITHIN 15 SEC OF TRAVEL TIME):
-    length = get_length_tracks(access_token, playlist=rec_playlist)
+    # ADD AND REMOVE SONGS FROM NEW PLAYLIST IN LIBRARY (UNTIL WITHIN 3 MIN (was 15 sec) OF TRAVEL TIME):
+    length = get_length_tracks(access_token, playlist=new_playlist)
     max_attempts = 0
-    while length < (travel_duration - 0.25) or length > (travel_duration + 0.25) and max_attempts < 50:
+    while length < (travel_duration - 3) or length > (travel_duration + 3) and max_attempts < 50:
         print("we've entered the loop!! attempt: " + str(max_attempts) + ". length: " + str(length))
-        if length < (travel_duration - 0.25): # if playlist is too short
+        if length < (travel_duration - 3): # if playlist is too short
             # call search_song_to_extend
             add_track_uri = search_song_to_extend_playlist(access_token, search)
             # use Add Item to Playlist to add the URI to the playlist
@@ -363,20 +374,36 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
                 print("Error during add track: {}".format(e))
                 break
             # check if the length has changed:
-            length = get_length_tracks(access_token, playlist=rec_playlist)
+            length = get_length_tracks(access_token, playlist=new_playlist)
             max_attempts += 1
-            # if the playlist is too long, keep removing songs until you reach within 15 seconds of duration
+            # if the playlist is too long, keep removing 5 songs until you reach within 3 min of duration
             # use the Remove Item from Playlist API
-        elif length > (travel_duration + 0.25):
+        elif length > (travel_duration + 3):
             # get the last song from the list of URIs
-            remove_track_uri = track_uris.pop()  # This also removes it from the list
+            remove_uri1 = track_uris.pop() # This also removes it from the list
+            remove_uri2 = track_uris.pop()
+            remove_uri3 = track_uris.pop()
+            remove_uri4 = track_uris.pop()
+            remove_uri5 = track_uris.pop()
             body = {
                 "tracks": [
                     {
-                        "uri": remove_track_uri, # give the one uri to remove
+                        "uri": remove_uri1,
+                    },
+                    {
+                        "uri": remove_uri2,
+                    },
+                    {
+                        "uri": remove_uri3,
+                    },
+                    {
+                        "uri": remove_uri4,
+                    },
+                    {
+                        "uri": remove_uri5,
                     }
                 ],
-                "snapshot_id": snapshot_id # get this
+                "snapshot_id": snapshot_id # get this from above
             }
             body_encoded = json.dumps(body).encode("utf-8")
             url_remove_track = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
@@ -391,7 +418,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
                     snap = json.loads(res_data)
                     snapshot_id = snap["snapshot_id"]  # update the playlist snapshot to reflect new changes
                     # Now update the length only after successful removal
-                    length = get_length_tracks(access_token, playlist=rec_playlist)
+                    length = get_length_tracks(access_token, playlist=new_playlist)
             except Exception as e:
                 print("Error during remove track: {}".format(e))
                 break
