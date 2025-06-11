@@ -71,14 +71,14 @@ def results():
         else:
             rec_playlist = search_playlists(token, user_id)
         final_playlist = copy_playlist_into_library(token, user_id, rec_playlist, travel_duration)
-        title = final_playlist["title"]
-        owner = final_playlist["owner"]
-        url = final_playlist["url"]
-        if final_playlist["description"]:
-            description = final_playlist["description"]
+        title = final_playlist[0]["title"]
+        owner = final_playlist[0]["owner"]
+        url = final_playlist[0]["url"]
+        if final_playlist[0]["description"]:
+            description = final_playlist[0]["description"]
         else:
             description = ""
-        images = final_playlist["images"][0]["url"] # todo: adjust so that it gives four images
+        images = final_playlist[0]["images"][0]["url"] # todo: adjust so that it gives four images
         playlist_length = get_length_tracks(token, playlist=final_playlist)
         return render_template("results.html", title=title, duration=travel_duration,
                                owner=owner, playlist_length=playlist_length, url=url, description=description, images=images)
