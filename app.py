@@ -64,7 +64,8 @@ def authorize():
 def results():
     token = session["spotify-token"]["access_token"]
     if request.method == 'POST':
-        travel_duration = get_travel_duration(openroute_service_key, request.form["start_location"], request.form["end_location"])
+        travel_duration = get_travel_duration(openroute_service_key, request.form["start_location"],
+                                              request.form["end_location"], request.form["travel_type_user"])
         user_id = get_users_profile(token)
         if request.form["search_term"]:
             rec_playlist = search_playlists(token, user_id, request.form["search_term"])
@@ -78,11 +79,11 @@ def results():
             description = final_playlist[0]["description"]
         else:
             description = ""
-        images = final_playlist[0]["images"][0]["url"] # todo: adjust so that it gives four images
-        playlist_length = get_length_tracks(token, playlist=final_playlist)
+        images = final_playlist[0]["images"][0]["url"]
+        playlist_length = round(get_length_tracks(token, playlist=final_playlist), 2)
         return render_template("results.html", title=title, duration=travel_duration,
                                owner=owner, playlist_length=playlist_length, url=url, description=description, images=images,
-                               start=request.form["start_location"], end=request.form["end_location"])
+                               start=request.form["start_location"], end=request.form["end_location"], travel=request.form["travel_type_user"])
     else:
         return "<html><head></head><body><p>HTTP 400 error: Wrong HTTP request method</p></body></html>"
 

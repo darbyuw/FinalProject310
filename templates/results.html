@@ -4,11 +4,11 @@
   <div class="col-md-8 offset-md-2 text-center" >
       <p></p>
     <h4>
-        Your perfect length playlist:
+        Playlist generated successfully.
     </h4>
-      <h6> A playlist corresponding to the length of your travel time from {{ start }} to {{ end }}. </h6>
-      <p class="fw-light"> Travel Duration: {{ duration }} minutes </p>
-      <p class="fw-light"> Playlist Length: {{ playlist_length }} minutes </p>
+      <h6> {{ travel }} from {{ start }} to {{ end }}. </h6>
+      <p class="fw-light"> Travel Duration: {{ duration }} minutes <br>
+          Playlist Length: {{ playlist_length }} minutes </p>
     </div>
   </div>
 {% if length == 0 %}
@@ -21,15 +21,14 @@
 </div>
 {% endif %}
 
-<!-- Change this to the bootstrap card shape that you want! -->
     <div class="row">
-      <div class="col-md-8 offset-md-2" >
+      <div class="col-md-4 offset-md-4" >
         <div class="card" >
             <a href ="{{ url }}">
             <img src= "{{ images }}" class="card-img-top" alt="An image of the album cover of the first song in the playlist">
             </a>
           <div class="card-body">
-              <h5> class="card-title" {{ title }} </h5>
+              <h5 class="card-title"> {{ title }} </h5>
               <p class="card-text"> {{ description }}</p>
               <a href="{{ url }}" class="btn btn-primary">Go to playlist</a>
 
@@ -37,5 +36,5 @@
         </div>
       </div>
     </div>
-
+<div><p></p></div>
 {% endblock%}

@@ -41,9 +41,15 @@ def get_lat_lon(key, start_destination, end_destination):
     return [call.json()['features'][0]['geometry']['coordinates'], call2.json()['features'][0]['geometry']['coordinates']]
 
 # Returns the duration in minutes of the travel time from the start destination to the end destination. Rounds down.
-def get_travel_duration(key, start_destination, end_destination):
+def get_travel_duration(key, start_destination, end_destination, travel_type_user):
 
-    travel_type = "driving-car" # todo: allow users to change this
+    if travel_type_user == "Driving":
+        travel_type = "driving-car"
+    elif travel_type_user == "Walking":
+        travel_type = "foot-walking"
+    elif travel_type_user == "Biking":
+        travel_type = "cycling-regular"
+
 
     locations = get_lat_lon(key, start_destination, end_destination)
 
@@ -203,14 +209,10 @@ def get_length_tracks(access_token, playlist):
 
 
     # todo: find out if you can change hte travel_type to walking for the openroute service api
-    # todo: consider allowing users to enter one word to describe the type of playlist they want
 
 
+# Use the Get Current User's Profile endpoint to get the Spotify User ID (in order to create a playlist on their account)
 def get_users_profile(access_token):
-    # Get Current User's Profile API to get the Spotify User ID (in order to create a playlist on their account)
-    # print("Access token type:", type(access_token))
-    # print("Access token repr:", repr(access_token))
-
     url = "https://api.spotify.com/v1/me"
     headers = {
         "Authorization": f"Bearer {access_token}"
