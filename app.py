@@ -1,11 +1,7 @@
-import json
-import projectsecrets
-import pprint
-
-from flask import Flask, redirect, session, url_for, render_template, request, jsonify
+from flask import Flask, redirect, session, url_for, render_template, request
 from authlib.integrations.flask_client import OAuth
 
-from functions import get_length_tracks, get_travel_duration, search_playlists, get_lat_lon, get_users_profile, \
+from functions import get_length_tracks, get_travel_duration, search_playlists, get_users_profile, \
     copy_playlist_into_library
 
 from projectsecrets import app_secret, spotify_client_id, spotify_client_secret, openroute_service_key
@@ -24,7 +20,7 @@ oauth.register(
         'scope': 'user-read-private playlist-modify-private playlist-read-private'
     }
 )
-# --------------------------------------------------- AUTHORIZE USER PAGES --------------------------------------------------
+# --------------------------------------------------- PAGES --------------------------------------------------
 @app.route("/")
 def index():
     try:
@@ -32,13 +28,6 @@ def index():
         #print(request.args)
     except KeyError:
         return redirect(url_for("login"))
-
-    # print("OAUTH:")
-    #print(dir(oauth.spotify))
-    #
-    #access_token = session["spotify-token"]["access_token"]
-    # print("Access Token:", access_token)
-    #get_length_tracks(access_token)
 
     return render_template("index.html")
 
@@ -86,29 +75,3 @@ def results():
                                start=request.form["start_location"], end=request.form["end_location"], travel=request.form["travel_type_user"])
     else:
         return "<html><head></head><body><p>HTTP 400 error: Wrong HTTP request method</p></body></html>"
-
-# --------------------------------------------------- MY PAGES --------------------------------------------------
-# @app.route('/about')
-# def about():
-#     with urllib.request.urlopen('https://depts.washington.edu/ledlab/teaching/is-it-raining-in-seattle/') as response:
-#         is_it_raining_in_seattle = response.read().decode()
-#
-#     if is_it_raining_in_seattle == "true":
-#         return render_template("index.html", x="Yes")
-#     else:
-#         return render_template("index.html", x="No")
-#
-# # a page for getting the playlist
-# @app.route('/getplaylist')
-# def printplaylists():
-#     # get the playlist:
-#     playlists = search_playlists()
-#     # get info from each track
-#     time = get_length_tracks(playlists)
-#
-#     return render_template("index.html", x=time)
-#
-#
-# @app.route('/maps')
-# def maps():
-#     return "maps"
