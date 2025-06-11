@@ -98,7 +98,7 @@ def search_playlists(access_token, user_id, search="walking"):
                             "tracks": item["tracks"],
                             "id": item["id"]
                     })
-            pprint.pprint(playlists)
+            # pprint.pprint(playlists)
             return playlists
 
     except urllib.error.HTTPError as e:
@@ -329,15 +329,17 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
     try:
         with urllib.request.urlopen(req3) as res:
             res_data = res.read()
+            snap = json.loads(res_data)
+            snapshot_id = snap["snapshot_id"]  # get the playlist snapshot to reflect new changes
     except Exception as e:
         print("Error during copy all tracks into new playlist: {}".format(e))
+
     # ADD AND REMOVE SONGS FROM NEW PLAYLIST IN LIBRARY (UNTIL WITHIN 15 SEC OF TRAVEL TIME):
     length = get_length_tracks(access_token, playlist=rec_playlist)
     max_attempts = 0
     while length < (travel_duration - 0.25) or length > (travel_duration + 0.25) and max_attempts < 50:
         print("we've entered the loop!! attempt: " + str(max_attempts) + ". length: " + str(length))
-        length = get_length_tracks(access_token, playlist=rec_playlist) # check if the length has changed
-        if length < (travel_duration - 0.25): # if length
+        if length < (travel_duration - 0.25): # if playlist is too short
             # call search_song_to_extend
             add_track_uri = search_song_to_extend_playlist(access_token, search)
             # use Add Item to Playlist to add the URI to the playlist
@@ -351,25 +353,30 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
                 "Content-Type": "application/json"
             }
             req4 = urllib.request.Request(url_add_track, headers=headers, data=body_encoded, method="POST")
+            # open the request so the changes are made
             try:
                 with urllib.request.urlopen(req4) as res:
                     res_data = res.read()
+                    snap = json.loads(res_data)
+                    snapshot_id = snap["snapshot_id"] # update the playlist snapshot to reflect new changes
             except Exception as e:
                 print("Error during add track: {}".format(e))
+                break
+            # check if the length has changed:
+            length = get_length_tracks(access_token, playlist=rec_playlist)
             max_attempts += 1
-        elif length > (travel_duration + 0.25):
-
-            # if length is more than duration, keep removing songs until you reach within 15 seconds of duration
+            # if the playlist is too long, keep removing songs until you reach within 15 seconds of duration
             # use the Remove Item from Playlist API
+        elif length > (travel_duration + 0.25):
             # get the last song from the list of URIs
             remove_track_uri = track_uris.pop()  # This also removes it from the list
-
             body = {
                 "tracks": [
                     {
-                        "uri": remove_track_uri,
+                        "uri": remove_track_uri, # give the one uri to remove
                     }
-                ]
+                ],
+                "snapshot_id": snapshot_id # get this
             }
             body_encoded = json.dumps(body).encode("utf-8")
             url_remove_track = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
@@ -381,6 +388,8 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
             try:
                 with urllib.request.urlopen(req5) as res:
                     res_data = res.read()
+                    snap = json.loads(res_data)
+                    snapshot_id = snap["snapshot_id"]  # update the playlist snapshot to reflect new changes
                     # Now update the length only after successful removal
                     length = get_length_tracks(access_token, playlist=rec_playlist)
             except Exception as e:
