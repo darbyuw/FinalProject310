@@ -6,8 +6,11 @@
         Your perfect length playlist:
     </h2>
     <h3>
-        {{ length }} minutes
+        Travel Duration: {{ duration }} minutes
     </h3>
+        <h3>
+        Playlist Length: {{ playlist_length }} minutes
+        </h3>
     </div>
   </div>
 {% if length == 0 %}
@@ -25,9 +28,9 @@
       <div class="col-md-8 offset-md-2" >
         <div class="card" >
           <div class="card-body">
-              <a class="card-title" href="{{ playlist.url }}"><h5>{{ playlist.title }} </h5></a>
+              <a class="card-title" href="{{ url }}"><h5>{{ title }} </h5></a>
                 <!-- ADD playlist image!! -->
-              <p class="card-text"> {{ playlist.description }}</p>
+              <p class="card-text"> {{ description }}</p>
           </div>
         </div>
       </div>

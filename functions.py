@@ -66,7 +66,7 @@ def get_travel_duration(key, start_destination, end_destination):
 # --------------------------------------------------- SPOTiFY API FUNCTIONS --------------------------------------------
 
 # This function returns a list of dictionaries of playlists on Spotify from the query: walking.
-def search_playlists(access_token, search="walking"):
+def search_playlists(access_token, user_id, search="walking"):
 
     query = urllib.parse.urlencode({
         "q": search,
@@ -87,19 +87,18 @@ def search_playlists(access_token, search="walking"):
             res_data = res.read()
             data = json.loads(res_data)
 
-            # print(json.dumps(data, indent=2))  # Debugging output
-
             playlists = []
             for item in data.get("playlists", {}).get("items", []):
                 if item and "name" in item and "owner" in item and "external_urls" in item:
-                    playlists.append({
-                        "name": item["name"],
-                        "owner": item["owner"].get("display_name", "Unknown"),
-                        "url": item["external_urls"].get("spotify", ""),
-                        "tracks": item["tracks"],
-                        "id": item["id"]
+                    if not item["owner"].get("id") == user_id:
+                        playlists.append({
+                            "name": item["name"],
+                            "owner": item["owner"].get("display_name", "Unknown"),
+                            "url": item["external_urls"].get("spotify", ""),
+                            "tracks": item["tracks"],
+                            "id": item["id"]
                     })
-
+            pprint.pprint(playlists)
             return playlists
 
     except urllib.error.HTTPError as e:
@@ -229,7 +228,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
     if not rec_playlist:
         print("No recommended playlist found.")
 
-    pprint.pprint(rec_playlist)
+    # pprint.pprint(rec_playlist)
     body = {
         "name": "Your New Perfect Length Playlist",
         "description": "A playlist corresponding to the length of your travel time.",
@@ -256,7 +255,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
 
     response = requests.post(url, headers=headers, data=body_encoded)
 
-    if response.status_code == 201:
+    if response.status_code == 201: #todo: take this out
         playlist = response.json()
         print(f"Playlist created: {playlist['name']} (ID: {playlist['id']})")
         new_playlist_id = str(playlist["id"])
@@ -266,7 +265,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
         return None
 
 
-    print("playlsit is is this: ", new_playlist_id)
+    # print("playlsit is is this: ", new_playlist_id)
     # get each track id from recommended playlist to add to new playlist:
     playlist_id = rec_playlist[0]["id"]
     playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
@@ -311,6 +310,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
     length = get_length_tracks(access_token, playlist=rec_playlist)
     max_attempts = 0
     while length < (travel_duration - 0.25) or length > (travel_duration + 0.25) and max_attempts < 100:
+        length = get_length_tracks(access_token, playlist=rec_playlist) # check if the length has changed
         if length < (travel_duration - 0.25): # 15 seconds = 0.25 minutes
             # call search_song_to_extend
             add_track_uri = search_song_to_extend_playlist(access_token, search)
@@ -357,7 +357,29 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
                 print("Error during remove track: {}".format(e))
             max_attempts += 1
         max_attempts += 1
-    return new_playlist_id
+
+    # get playlist images, name, owner, uri, description(can be null) in a json dict
+    url_get_title = f"https://api.spotify.com/v1/playlists/{new_playlist_id}"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+    }
+    req3 = urllib.request.Request(url_get_title, headers=headers)
+    try:
+        with urllib.request.urlopen(req3) as res:
+            result = res.read()
+            data = json.loads(result)
+            playlist_info = []
+            playlist_info.append({
+                "title": data["name"],
+                "owner": data["owner"].get("display_name", "Unknown"),
+                "description": data["description"],
+                "url": data["external_urls"].get("spotify", ""),
+                "images": data["images"]
+            })
+    except Exception as e:
+        print("Error during get title and info from playlist: {}".format(e))
+
+    return playlist_info
 
 #todo: get info on the playlist (like title, owner,etc) using the get playlist API? then use that to return the variables that you need for the html ??
 
@@ -397,10 +419,11 @@ def search_song_to_extend_playlist(access_token, search="walking"):
         return jsonify({"error": str(e)}), 500
 
 
+
 def main():
     get_lat_lon(projectsecrets.openroute_service_key, "University of Washington, Seattle", "340 NW 47th St, Seattle, WA, 98107")
     #
-    # print(get_travel_duration(projectsecrets.openroute_service_key, "driving-car", "575 Bellevue Square, Bellevue", "340 NW 47th St, Seattle, WA, 98107"))
+    print(get_travel_duration(projectsecrets.openroute_service_key, "driving-car", "575 Bellevue Square, Bellevue", "340 NW 47th St, Seattle, WA, 98107"))
 
 
 if __name__ == "__main__":

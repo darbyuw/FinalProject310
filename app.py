@@ -67,12 +67,21 @@ def results():
         travel_duration = get_travel_duration(openroute_service_key, request.form["start_location"], request.form["end_location"])
         user_id = get_users_profile(token)
         if request.form["search_term"]:
-            rec_playlist = search_playlists(token, request.form["search_term"])
+            rec_playlist = search_playlists(token, user_id, request.form["search_term"])
         else:
-            rec_playlist = search_playlists(token)
+            rec_playlist = search_playlists(token, user_id)
         final_playlist = copy_playlist_into_library(token, user_id, rec_playlist, travel_duration)
-            # todo: how to get playlist title, description and user for the results page??
-        return render_template("results.html", playlist=final_playlist, legnth=travel_duration)
+        title = final_playlist["title"]
+        owner = final_playlist["owner"]
+        url = final_playlist["url"]
+        if final_playlist["description"]:
+            description = final_playlist["description"]
+        else:
+            description = ""
+        images = final_playlist["images"][0]["url"] # todo: adjust so that it gives four images
+        playlist_length = get_length_tracks(token, playlist=final_playlist)
+        return render_template("results.html", title=title, duration=travel_duration,
+                               owner=owner, playlist_length=playlist_length, url=url, description=description, images=images)
     else:
         return "<html><head></head><body><p>HTTP 400 error: Wrong HTTP request method</p></body></html>"
 
