@@ -202,16 +202,6 @@ def get_length_tracks(access_token, playlist):
     return total_time / 60000
 
 
-# TODO: make a function for making the playlist longer or shorter
-    # should this be two functions?? one function: pass in a playlist and it removes the last track, another function: pass in playlist, adds one track
-        # but what track would it add?? maybe the first song that pops up when you do a search query for the search term (ex: "walking" songs)
-    # step 1: Get Current User's Profile API to get the Spotify User ID (in order to create a playlist on their account)
-    # step 2: save the recommended playlist to the user's account using Create Playlist API --> this creates an empty playlist
-    # step 2: use loops to copy each track item into new playlist using Add Items to Playlist API
-        # step 2.5: each time you add one of the tracks, check the new playlist length. Stop adding songs when you reach the desired length (ex: 15 min)
-    # step 3: account for short playlists: if new playlist never reaches desired length --> use Search For Item API again
-    # step 4: search for and return a song that fits the original query (ex: walking)
-    # step 5: add this song to the short playlist and continue until you reach desired length
     # todo: find out if you can change hte travel_type to walking for the openroute service api
     # todo: consider allowing users to enter one word to describe the type of playlist they want
 
@@ -239,21 +229,6 @@ def get_users_profile(access_token):
     except Exception as e:
         raise Exception(f"Error getting user_id: {str(e)}")
 
-    # try:
-    #     with urllib.request.urlopen(req) as res:
-    #         res_data = res.read()
-    #         data = json.loads(res_data)
-    #
-    #         user_id = str(data["id"])
-    #         return user_id
-    #
-    # except urllib.error.HTTPError as e:
-    #     error_body = e.read().decode()
-    #     print(f"HTTPError {e.code}: {error_body}")
-    #     return jsonify({"error": f"HTTPError {e.code}", "details": error_body}), e.code
-    # except Exception as e:
-    #     print(f"Error: {str(e)}")
-    #     return jsonify({"error": str(e)}), 500
 
 def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_duration, search="walking"):
     # save the recommended playlist to the user's account using Create Playlist API --> this creates an empty playlist
@@ -348,11 +323,12 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
     # ADD AND REMOVE SONGS FROM NEW PLAYLIST IN LIBRARY (UNTIL WITHIN 3 MIN (was 15 sec) OF TRAVEL TIME):
     length = get_length_tracks(access_token, playlist=new_playlist)
     max_attempts = 0
-    while length < (travel_duration - 3) or length > (travel_duration + 3) and max_attempts < 50:
+    while length < (travel_duration - 2) or length > (travel_duration + 2) and max_attempts < 50:
         print("we've entered the loop!! attempt: " + str(max_attempts) + ". length: " + str(length))
-        if length < (travel_duration - 3): # if playlist is too short
+        if length < (travel_duration - 2): # if playlist is too short
+            count = 0 # keep track of the number of songs that you add so that you can add a different one each time
             # call search_song_to_extend
-            add_track_uri = search_song_to_extend_playlist(access_token, search)
+            add_track_uri = search_song_to_extend_playlist(access_token, count, search) #TODO: test this with a short playlist
             # use Add Item to Playlist to add the URI to the playlist
             body = {
                 "uris": [add_track_uri] # no position, so it will add to the end of the playlist
@@ -370,15 +346,15 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
                     res_data = res.read()
                     snap = json.loads(res_data)
                     snapshot_id = snap["snapshot_id"] # update the playlist snapshot to reflect new changes
+                    length = get_length_tracks(access_token, playlist=new_playlist)
             except Exception as e:
                 print("Error during add track: {}".format(e))
                 break
             # check if the length has changed:
-            length = get_length_tracks(access_token, playlist=new_playlist)
             max_attempts += 1
             # if the playlist is too long, keep removing 5 songs until you reach within 3 min of duration
             # use the Remove Item from Playlist API
-        elif length > (travel_duration + 3):
+        elif length > (travel_duration + 10): # if length is super long
             # get the last song from the list of URIs
             remove_uri1 = track_uris.pop() # This also removes it from the list
             remove_uri2 = track_uris.pop()
@@ -423,28 +399,35 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
                 print("Error during remove track: {}".format(e))
                 break
             max_attempts += 1
-            # remove_track_uri = track_uris[-1]
-            # # remove that song using the API
-            # body = {
-            #     "tracks": [
-            #         {
-            #             "uri": remove_track_uri,
-            #         }
-            # ]}
-            # body_encoded = json.dumps(body).encode("utf-8")
-            # url_remove_track = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
-            # headers = {
-            #     "Authorization": f"Bearer {access_token}",
-            #     "Content-Type": "application/json"
-            # }
-            # req5 = urllib.request.Request(url_remove_track, headers=headers, data=body_encoded, method="DELETE")
-            # try:
-            #     with urllib.request.urlopen(req5) as res:
-            #         res_data = res.read()
-            # except Exception as e:
-            #     print("Error during remove track: {}".format(e))
-            #     break
-            # max_attempts += 1
+        # when close to desired length, go down my one song length at a time:
+        elif length > (travel_duration + 2) and length < (travel_duration + 10):
+            remove_uri1 = track_uris.pop()
+            body = {
+                "tracks": [
+                    {
+                        "uri": remove_uri1,
+                    },
+                ],
+                "snapshot_id": snapshot_id
+            }
+            body_encoded = json.dumps(body).encode("utf-8")
+            url_remove_track = "https://api.spotify.com/v1/playlists/" + new_playlist_id + "/tracks"
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json"
+            }
+            req5 = urllib.request.Request(url_remove_track, headers=headers, data=body_encoded, method="DELETE")
+            try:
+                with urllib.request.urlopen(req5) as res:
+                    res_data = res.read()
+                    snap = json.loads(res_data)
+                    snapshot_id = snap["snapshot_id"]  # update the playlist snapshot to reflect new changes
+                    # Now update the length only after successful removal
+                    length = get_length_tracks(access_token, playlist=new_playlist)
+            except Exception as e:
+                print("Error during remove track: {}".format(e))
+                break
+            max_attempts += 1
         else:
             max_attempts += 1
 
@@ -473,12 +456,13 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
 
 
 
-# Search for and return one track URI corresponding to the search term.
-def search_song_to_extend_playlist(access_token, search="walking"):
+# Search for and return one track URI corresponding to the search term. Takes in a number corresponding to which track
+# to return. For example, if the first track has already been returned, enter 2 so that a different track is returned.
+def search_song_to_extend_playlist(access_token, number, search="walking"):
     query = urllib.parse.urlencode({
         "q": search,
         "type": "track",
-        "limit": 1
+        "limit": 10
     })
     url = f"https://api.spotify.com/v1/search?{query}"
 
@@ -493,9 +477,12 @@ def search_song_to_extend_playlist(access_token, search="walking"):
             res_data = res.read()
             data = json.loads(res_data)
             # get the URI of the song to add
+            returned_tracks = []
             for item in data.get("tracks", {}).get("items", []):
                 if item and "uri" in item:
-                    track_uri = str(item["uri"])
+                    returned_tracks.append(item["uri"]) # now we have a list of 10 tracks returned from the search
+
+            track_uri = str(returned_tracks[number])
 
             return track_uri
 
@@ -510,8 +497,8 @@ def search_song_to_extend_playlist(access_token, search="walking"):
 
 
 def main():
+    # testing code for OpenRouteService API
     get_lat_lon(projectsecrets.openroute_service_key, "University of Washington, Seattle", "340 NW 47th St, Seattle, WA, 98107")
-    #
     print(get_travel_duration(projectsecrets.openroute_service_key, "driving-car", "575 Bellevue Square, Bellevue", "340 NW 47th St, Seattle, WA, 98107"))
 
 
