@@ -22,10 +22,7 @@ def get_lat_lon(key, start_destination, end_destination):
     headers = {
         'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
     }
-    call = requests.get(url, headers=headers) # todo: put this within a try/except block
-
-    # pprint.pprint(call.json())
-    # print("Here are the start coordinates:", call.json()['features'][0]['geometry']['coordinates'])
+    call = requests.get(url, headers=headers)
 
     query2 = urllib.parse.urlencode({
         "api_key": key,
@@ -104,7 +101,6 @@ def search_playlists(access_token, user_id, search="walking"):
                             "tracks": item["tracks"],
                             "id": item["id"]
                     })
-            # pprint.pprint(playlists)
             return playlists
 
     except urllib.error.HTTPError as e:
@@ -155,9 +151,7 @@ def get_length_tracks(access_token, playlist):
 
         except urllib.error.HTTPError as e:
             if e.code == 429:
-                # retry_after = int(e.headers.get("Retry-After", 5))
                 print(f"Rate limited. Retrying...")
-                # time.sleep(retry_after)
                 continue  # retry same request
             else:
                 print(f"Failed to fetch playlist tracks: {e}")
@@ -165,51 +159,7 @@ def get_length_tracks(access_token, playlist):
         except json.JSONDecodeError:
             print("Failed to parse JSON response.")
             break
-    # request1 = urllib.request.Request(playlist_url, headers=headers)
-    #
-    # try:
-    #     with urllib.request.urlopen(request1) as res:
-    #
-    #         res_data = res.read()
-    #         playlists = json.loads(res_data)
-    #         # get the tracks from the track list in playlist:
-    #         tracks = []
-    #         for item in playlists.get("items", []):
-    #             track_info = item.get("track")
-    #             if track_info and "id" in track_info:
-    #                 tracks.append({
-    #                     "id": track_info["id"]
-    #                 })
-    #             else:
-    #                 print(f"Error or missing track info: {item}")
-    # except urllib.error.HTTPError as e:
-    #     print("Failed to get track id in get_tracks_length: {}".format(e))
-    #
-    # # the following loop uses the Get Track API to get info on each track in the above list of tracks
-    # total_time = 0
-    # for track in tracks:
-    #     # put the url together for the API call:
-    #     track_id = track["id"]
-    #     track_url = f"https://api.spotify.com/v1/tracks/{track_id}"
-    #     # make request to get track info
-    #     request2 = urllib.request.Request(track_url, headers=headers)
-    #     # data = request2.json()
-    #
-    #     try:
-    #         with urllib.request.urlopen(request2) as res:
-    #             res_data = res.read()
-    #             track_data = json.loads(res_data)
-    #             # add the length of the track to the total playlist duration
-    #             track_duration = track_data.get("duration_ms", 0)
-    #             total_time += track_duration
-    #
-    #     except urllib.error.HTTPError as e:
-    #         print("Failed to get track duration from Get Track API: {}".format(e))
     return total_time / 60000
-
-
-    # todo: find out if you can change hte travel_type to walking for the openroute service api
-
 
 # Use the Get Current User's Profile endpoint to get the Spotify User ID (in order to create a playlist on their account)
 def get_users_profile(access_token):
@@ -237,7 +187,6 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
     if not rec_playlist:
         print("No recommended playlist found.")
 
-    # pprint.pprint(rec_playlist)
     body = {
         "name": "Your New Perfect Length Playlist",
         "description": "A playlist corresponding to the length of your travel time.",
@@ -253,13 +202,9 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
 
     response = requests.post(url, headers=headers, data=body_encoded)
 
-    if response.status_code == 201: #todo: take this out
+    if response.status_code == 201:
         playlist = response.json()
-        # playlist = json.loads(res_data)
-        # playlist = response.json()
-        # print("Successfully created new playlist: ")
-        # print(playlist)
-        print(f"Playlist created: {playlist['name']} (ID: {playlist['id']})")
+        # print(f"Playlist created: {playlist['name']} (ID: {playlist['id']})")
         new_playlist_id = str(playlist["id"])
         new_playlist = [{
                     "name": playlist["name"],
@@ -354,7 +299,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
                 break
             # check if the length has changed:
             max_attempts += 1
-            # if the playlist is too long, keep removing 5 songs until you reach within 3 min of duration
+
             # use the Remove Item from Playlist API
         elif length > (travel_duration + 10): # if length is super long
             # get the last song from the list of URIs
