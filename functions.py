@@ -12,7 +12,6 @@ import pprint
 # Returns a tuple containing the coordinates for the start location and the coordinates for the end location.
 # Accepts an API key (str), a start destination (str), and an end destination (str).
 def get_lat_lon(key, start_destination, end_destination):
-
     query = urllib.parse.urlencode({
         "api_key": key,
         "text": start_destination,
@@ -39,14 +38,14 @@ def get_lat_lon(key, start_destination, end_destination):
 
 # Returns the duration in minutes of the travel time from the start destination to the end destination. Rounds down.
 def get_travel_duration(key, start_destination, end_destination, travel_type_user):
-
     if travel_type_user == "Driving":
         travel_type = "driving-car"
     elif travel_type_user == "Walking":
         travel_type = "foot-walking"
     elif travel_type_user == "Biking":
         travel_type = "cycling-regular"
-
+    else:
+        print("Invalid travel type")
 
     locations = get_lat_lon(key, start_destination, end_destination)
 
@@ -66,11 +65,10 @@ def get_travel_duration(key, start_destination, end_destination, travel_type_use
     return minutes
 
 
-# --------------------------------------------------- SPOTiFY API FUNCTIONS --------------------------------------------
+# --------------------------------------------------- SPOTIFY API FUNCTIONS --------------------------------------------
 
 # This function returns a list of dictionaries of playlists on Spotify from the query: walking.
 def search_playlists(access_token, user_id, search="walking"):
-
     query = urllib.parse.urlencode({
         "q": search,
         "type": "playlist",
@@ -167,7 +165,6 @@ def get_users_profile(access_token):
     headers = {
         "Authorization": f"Bearer {access_token}"
     }
-
     req = urllib.request.Request(url, headers=headers)
 
     try:
@@ -181,7 +178,10 @@ def get_users_profile(access_token):
     except Exception as e:
         raise Exception(f"Error getting user_id: {str(e)}")
 
-
+# Returns a list of one dictionary containing playlist information (in this format to work with get_length_tracks()).
+# Takes in Spotify access token, user ID, recommended playlist, travel duration and search term.
+# Copies the recommended playlist into the user's library, then adds and removes songs until the playlist length is
+# within two minutes of the travel duration.
 def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_duration, search="walking"):
     # save the recommended playlist to the user's account using Create Playlist API --> this creates an empty playlist
     if not rec_playlist:
@@ -204,7 +204,6 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
 
     if response.status_code == 201:
         playlist = response.json()
-        # print(f"Playlist created: {playlist['name']} (ID: {playlist['id']})")
         new_playlist_id = str(playlist["id"])
         new_playlist = [{
                     "name": playlist["name"],
@@ -218,8 +217,6 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
         print("Response:", response.json())
         return None
 
-
-    # print("playlsit is is this: ", new_playlist_id)
     # get each track id from recommended playlist to add to new playlist:
     playlist_id = rec_playlist[0]["id"]
     playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
@@ -271,7 +268,7 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
     length = get_length_tracks(access_token, playlist=new_playlist)
     max_attempts = 0
     while length < (travel_duration - 2) or length > (travel_duration + 2) and max_attempts < 50:
-        print("we've entered the loop!! attempt: " + str(max_attempts) + ". length: " + str(length))
+        # print("we've entered the loop! attempt: " + str(max_attempts) + ". length: " + str(length))
         if length < (travel_duration - 2): # if playlist is too short
             count = 0 # keep track of the number of songs that you add so that you can add a different one each time
             # call search_song_to_extend
@@ -403,13 +400,13 @@ def copy_playlist_into_library(access_token, user_id, rec_playlist, travel_durat
 
 
 
-# Search for and return one track URI corresponding to the search term. Takes in a number corresponding to which track
-# to return. For example, if the first track has already been returned, enter 2 so that a different track is returned.
+# Search for and return one track URI corresponding to the search term. Takes in a number from 0 to 20 corresponding
+# to the track to return. For example, if the first track has already been returned, enter 2 so that a different track is returned.
 def search_song_to_extend_playlist(access_token, number, search="walking"):
     query = urllib.parse.urlencode({
         "q": search,
         "type": "track",
-        "limit": 10
+        "limit": 20
     })
     url = f"https://api.spotify.com/v1/search?{query}"
 
