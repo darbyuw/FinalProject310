@@ -25,34 +25,34 @@ oauth.register(
 # --------------------------------------------------- PAGES --------------------------------------------------
 @app.route("/")
 def index():
-    access_token = get_token()
-    if not access_token:
-        return redirect(url_for("login"))
-    # try:
-    #     token = session["spotify-token"]["access_token"]
-    #     #print(request.args)
-    # except KeyError:
+    # access_token = get_token()
+    # if not access_token:
     #     return redirect(url_for("login"))
+    try:
+        token = session["spotify-token"]["access_token"]
+        #print(request.args)
+    except KeyError:
+        return redirect(url_for("login"))
 
     return render_template("index.html")
 
-def get_token():
-    token = session.get("spotify-token")
-    if token:
-        # If token is expired, try to refresh it
-        if oauth.spotify.token.is_expired(token):
-            try:
-                new_token = oauth.spotify.refresh_token(
-                    url="https://accounts.spotify.com/api/token",
-                    refresh_token=token["refresh_token"]
-                )
-                session["spotify-token"] = new_token
-                return new_token["access_token"]
-            except Exception as e:
-                print("Error refreshing token:", e)
-                return None
-        return token["access_token"]
-    return None
+# def get_token():
+#     token = session.get("spotify-token")
+#     if token:
+#         # If token is expired, try to refresh it
+#         if oauth.spotify.token.is_expired(token):
+#             try:
+#                 new_token = oauth.spotify.refresh_token(
+#                     url="https://accounts.spotify.com/api/token",
+#                     refresh_token=token["refresh_token"]
+#                 )
+#                 session["spotify-token"] = new_token
+#                 return new_token["access_token"]
+#             except Exception as e:
+#                 print("Error refreshing token:", e)
+#                 return None
+#         return token["access_token"]
+#     return None
 
 @app.route("/login")
 def login():
